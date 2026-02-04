@@ -128,3 +128,6 @@ DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups/'}
 # Расписание резервного копирования (если нужно автоматическое)
 DBBACKUP_CLEANUP_KEEP = 30  # Хранить 30 последних резервных копий
 DBBACKUP_CLEANUP_KEEP_MEDIA = 10  # Хранить 10 последних медиа-резервов
+
+# После выхода перенаправляем пользователя на корень сайта
+LOGOUT_REDIRECT_URL = '/'

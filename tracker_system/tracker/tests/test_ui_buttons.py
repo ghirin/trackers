@@ -23,3 +23,11 @@ class UIButtonTests(TestCase):
         # logout button should be styled to contrast with blue background
         # check presence of btn-light class in the navbar
         self.assertIn('btn btn-light', r3.content.decode('utf-8'))
+
+    def test_logout_redirects_to_root(self):
+        # POST to logout should redirect to site root '/'
+        r = self.client.post(reverse('logout'))
+        self.assertIn(r.status_code, (302, 303))
+        # Django test client returns absolute or relative Location depending on settings; normalize
+        location = r.get('Location') or r.headers.get('Location')
+        self.assertTrue(location == '/' or location.endswith('/'))
