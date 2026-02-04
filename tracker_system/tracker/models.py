@@ -352,3 +352,51 @@ class OrderDocument(models.Model):
     
     def filename(self):
         return os.path.basename(self.document.name)
+
+
+# --- Audit log model ---
+from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+try:
+    # Django 3.1+: JSONField in django.db.models
+    from django.db.models import JSONField
+except Exception:
+    # For older Django, fallback to TextField
+    JSONField = None
+
+class ActionLog(models.Model):
+    ACTIONS = [
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('delete', 'Delete'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Пользователь'
+    )
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        verbose_name='Тип объекта'
+    )
+    object_id = models.CharField('ID объекта', max_length=255)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    object_repr = models.CharField('Представление объекта', max_length=255)
+    action = models.CharField('Действие', max_length=10, choices=ACTIONS)
+    changes = JSONField('Изменения', null=True, blank=True) if JSONField else models.TextField('Изменения (JSON)', null=True, blank=True)
+    timestamp = models.DateTimeField('Время', auto_now_add=True)
+    request_path = models.CharField('Путь запроса', max_length=200, blank=True, null=True)
+    ip_address = models.CharField('IP адрес', max_length=100, blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Лог действий'
+        verbose_name_plural = 'Логи действий'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.user or 'system'} - {self.action} - {self.object_repr}"

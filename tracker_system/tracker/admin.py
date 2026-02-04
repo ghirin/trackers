@@ -11,7 +11,7 @@ except Exception:
     base_formats = []
 
 from django.db.models import Q
-from .models import Car, Tracker, InstallationHistory, OrderDocument, Location
+from .models import Car, Tracker, InstallationHistory, OrderDocument, Location, ActionLog
 
 # Ресурсы для импорта-экспорта
 class CarResource(resources.ModelResource):
@@ -214,3 +214,60 @@ class OrderDocumentAdmin(admin.ModelAdmin):
     def filename(self, obj):
         return obj.filename()
     filename.short_description = 'Имя файла'
+
+
+# ------------------------
+# ActionLog admin + export
+# ------------------------
+import csv
+import json
+from django.http import HttpResponse
+
+@admin.action(description='Export selected logs as CSV')
+def export_logs_csv(modeladmin, request, queryset):
+    fieldnames = ['timestamp', 'user', 'action', 'object_repr', 'content_type', 'object_id', 'changes', 'request_path', 'ip_address']
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="action_logs.csv"'
+    writer = csv.DictWriter(response, fieldnames=fieldnames)
+    writer.writeheader()
+    for log in queryset:
+        writer.writerow({
+            'timestamp': log.timestamp.isoformat(),
+            'user': log.user.username if log.user else '',
+            'action': log.action,
+            'object_repr': log.object_repr,
+            'content_type': str(log.content_type),
+            'object_id': log.object_id,
+            'changes': json.dumps(log.changes, ensure_ascii=False),
+            'request_path': log.request_path or '',
+            'ip_address': log.ip_address or '',
+        })
+    return response
+
+@admin.action(description='Export selected logs as JSON')
+def export_logs_json(modeladmin, request, queryset):
+    data = []
+    for log in queryset:
+        data.append({
+            'timestamp': log.timestamp.isoformat(),
+            'user': log.user.username if log.user else None,
+            'action': log.action,
+            'object_repr': log.object_repr,
+            'content_type': str(log.content_type),
+            'object_id': log.object_id,
+            'changes': log.changes,
+            'request_path': log.request_path or '',
+            'ip_address': log.ip_address or '',
+        })
+    response = HttpResponse(json.dumps(data, ensure_ascii=False, indent=2), content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename="action_logs.json"'
+    return response
+
+
+@admin.register(ActionLog)
+class ActionLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'user', 'action', 'object_repr', 'content_type', 'object_id')
+    list_filter = ('action', 'content_type', 'timestamp')
+    search_fields = ('user__username', 'object_repr', 'changes')
+    readonly_fields = ('timestamp', 'user', 'action', 'object_repr', 'content_type', 'object_id', 'changes', 'request_path', 'ip_address')
+    actions = [export_logs_csv, export_logs_json]
