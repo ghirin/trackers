@@ -1,0 +1,121 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Отчёты{% endblock %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-white bg-primary mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Автомобилей</h5>
+        <h2 class="card-text">{{ cars_count }}</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Трекеров</h5>
+        <h2 class="card-text">{{ trackers_count }}</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-info mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Активных установок</h5>
+        <h2 class="card-text">{{ active_installations }}</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Неактивных трекеров</h5>
+        <h2 class="card-text">{{ inactive_trackers }}</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0">История установок</h5>
+  </div>
+  <div class="card-body p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label">Дата от</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}" class="form-control">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Дата до</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}" class="form-control">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Локация</label>
+        <select name="location" class="form-select">
+          <option value="">Все</option>
+          {% for loc in location_choices %}
+            <option value="{{ loc.id }}" {% if filters.location|add:'' == loc.id|stringformat:'s' %}selected{% endif %}>{{ loc.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Модель</label>
+        <select name="model" class="form-select">
+          <option value="">Все</option>
+          {% for val, label in model_choices %}
+          <option value="{{ val }}" {% if filters.model == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label">IMEI</label>
+        <input type="text" name="imei" value="{{ filters.imei }}" class="form-control" placeholder="IMEI">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">S/N трекера</label>
+        <input type="text" name="serial" value="{{ filters.serial }}" class="form-control" placeholder="S/N">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Номер телефона / SIM</label>
+        <input type="text" name="sim" value="{{ filters.sim }}" class="form-control" placeholder="часть номера">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Применить</button>
+        <button type="submit" formaction="{% url 'tracker:export_installations' %}" formmethod="get" class="btn btn-secondary">Экспорт XLSX</button>
+      </div>
+    </form>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Автомобиль</th>
+            <th>Локация</th>
+            <th>Трекер</th>
+            <th>Дата установки</th>
+            <th>Дата снятия</th>
+            <th>Статус</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in installations %}
+          <tr>
+            <td>{{ inst.car.board_number }} / {{ inst.car.state_number }}</td>
+            <td>{{ inst.car.location|default:'-' }}</td>
+            <td>{{ inst.tracker.serial_number }}</td>
+            <td>{{ inst.installation_date|date:"d.m.Y" }}</td>
+            <td>{{ inst.removal_date|date:"d.m.Y"|default:"-" }}</td>
+            <td>{% if inst.is_active %}<span class="badge bg-success">Активна</span>{% else %}<span class="badge bg-secondary">Завершена</span>{% endif %}</td>
+            <td>{{ inst.comment|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted">Нет записей по указанным фильтрам.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

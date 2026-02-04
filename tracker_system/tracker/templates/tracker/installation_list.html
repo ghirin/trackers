@@ -1,0 +1,129 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Список установок{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0">История установок</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Автомобиль</th>
+            <th>Трекер</th>
+            <th>Дата установки</th>
+            <th>Дата снятия</th>
+            <th>Статус</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in installations %}
+          <tr data-pk="{{ inst.pk }}">
+            <td>{{ inst.car.board_number }}</td>
+            <td>{{ inst.tracker.serial_number }}</td>
+            <td>{{ inst.installation_date|date:"d.m.Y" }}</td>
+            <td>{{ inst.removal_date|date:"d.m.Y"|default:"-" }}</td>
+            <td>{% if inst.is_active %}<span class="badge bg-success">Активна</span>{% else %}<span class="badge bg-secondary">Завершена</span>{% endif %}</td>
+            <td>{{ inst.comment|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'tracker/includes/pagination.html' %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const table = document.querySelector('table.table-hover');
+  table.querySelectorAll('tbody tr').forEach(function(row) {
+    row.addEventListener('dblclick', function() {
+      const pk = row.getAttribute('data-pk');
+      const url = `/tracker/installations/${pk}/update/`;
+      const modal = new bootstrap.Modal(document.getElementById('editInstallationModal'));
+      const modalBody = document.getElementById('editInstallationModalBody');
+      modalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(response => response.text())
+        .then(html => {
+          modalBody.innerHTML = html;
+          console.log('Loaded installation form for URL:', url);
+          function attachFormHandler(targetForm) {
+            const handleSubmit = function(e) {
+              e.preventDefault();
+              const postUrl = targetForm.getAttribute('action') || url;
+              console.log('Submitting installation form to:', postUrl);
+              const formData = new FormData(targetForm);
+              fetch(postUrl, {
+                method: 'POST',
+                headers: {
+                  'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+                credentials: 'same-origin'
+              })
+              .then(async response => {
+                console.log('Installation form fetch status:', response.status);
+                const text = await response.text();
+                console.log('Installation form fetch response length:', (text || '').length);
+                if (text.includes('<form')) {
+                  modalBody.innerHTML = text;
+                  const newForm = modalBody.querySelector('form');
+                  if (newForm) {
+                    attachFormHandler(newForm);
+                  }
+                } else {
+                  modal.hide();
+                  window.location.reload();
+                }
+              })
+              .catch(err => console.error('Installation form fetch error:', err));
+            };
+            targetForm.addEventListener('submit', handleSubmit);
+          }
+          const form = modalBody.querySelector('form');
+          if (form) {
+            console.log('Found form in modal; form.action=', form.getAttribute('action'));
+            // Attach handler and helper behavior (if removal_date is set, uncheck is_active)
+            const removalInput = form.querySelector('[name="removal_date"]');
+            const isActiveCheckbox = form.querySelector('[name="is_active"]');
+            if (removalInput && isActiveCheckbox) {
+              removalInput.addEventListener('input', () => {
+                if (removalInput.value) {
+                  isActiveCheckbox.checked = false;
+                }
+              });
+            }
+            attachFormHandler(form);
+          } else {
+            console.warn('No form found in installation modal');
+          }
+        })
+        .catch(err => console.error('Error loading installation form:', err));
+      modal.show();
+    });
+  });
+});
+</script>
+<div class="modal fade" id="editInstallationModal" tabindex="-1" aria-labelledby="editInstallationModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editInstallationModalLabel">Редактировать установку</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body" id="editInstallationModalBody">
+        <div class="text-center p-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

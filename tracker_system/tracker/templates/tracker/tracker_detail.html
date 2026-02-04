@@ -1,0 +1,29 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Детали трекера{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Трекер {{ tracker.serial_number }}</h5>
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Серийный номер</dt>
+      <dd class="col-sm-9">{{ tracker.serial_number }}</dd>
+
+      <dt class="col-sm-3">IMEI</dt>
+      <dd class="col-sm-9">{{ tracker.imei }}</dd>
+
+      <dt class="col-sm-3">Модель</dt>
+      <dd class="col-sm-9">{{ tracker.model }}</dd>
+
+      <dt class="col-sm-3">Статус</dt>
+      <dd class="col-sm-9">{% if tracker.is_active %}<span class="badge bg-success">Активен</span>{% else %}<span class="badge bg-danger">Неактивен</span>{% endif %}</dd>
+
+      <dt class="col-sm-3">Комментарий</dt>
+      <dd class="col-sm-9">{{ tracker.comment|default:'-' }}</dd>
+    </dl>
+    <a href="{% url 'tracker:tracker_list' %}" class="btn btn-secondary">Назад к списку</a>
+    <a href="{% url 'tracker:tracker_update' tracker.pk %}" class="btn btn-primary">Изменить</a>
+  </div>
+</div>
+{% endblock %}

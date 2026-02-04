@@ -1,0 +1,115 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Список трекеров{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Трекеры</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover" id="tracker-table">
+        <thead>
+          <tr>
+            <th>Серийный номер</th>
+            <th>IMEI</th>
+            <th>Модель</th>
+            <th>Статус</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tracker in trackers %}
+          <tr data-edit-url="{% url 'tracker:tracker_update' tracker.pk %}">
+            <td>{{ tracker.serial_number }}</td>
+            <td>{{ tracker.imei }}</td>
+            <td>{{ tracker.model }}</td>
+            <td>
+              {% if tracker.is_active %}
+                <span class="badge bg-success">Активен</span>
+              {% else %}
+                <span class="badge bg-danger">Неактивен</span>
+              {% endif %}
+            </td>
+            <td>{{ tracker.comment|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для редактирования -->
+<div class="modal fade" id="editTrackerModal" tabindex="-1" aria-labelledby="editTrackerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTrackerModalLabel">Редактировать трекер</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body" id="editTrackerModalBody">
+        <div class="text-center p-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const table = document.getElementById('tracker-table');
+  table.querySelectorAll('tbody tr').forEach(function(row) {
+    row.addEventListener('dblclick', function() {
+      const url = row.getAttribute('data-edit-url');
+      const modal = new bootstrap.Modal(document.getElementById('editTrackerModal'));
+      const modalBody = document.getElementById('editTrackerModalBody');
+      modalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(response => response.text())
+        .then(html => {
+          modalBody.innerHTML = html;
+          const form = modalBody.querySelector('form');
+          if (form) {
+            function attachFormHandler(targetForm) {
+              const handleSubmit = function(e) {
+                e.preventDefault();
+                const formData = new FormData(targetForm);
+                fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                  },
+                  body: formData,
+                  credentials: 'same-origin'
+                })
+                .then(async response => {
+                  console.log('Tracker form fetch status:', response.status);
+                  const text = await response.text();
+                  console.log('Tracker form fetch response:', text);
+                  if (text.includes('<form')) {
+                    modalBody.innerHTML = text;
+                    const newForm = modalBody.querySelector('form');
+                    if (newForm) attachFormHandler(newForm);
+                  } else {
+                    modal.hide();
+                    window.location.reload();
+                  }
+                })
+                .catch(err => console.error('Tracker form fetch error:', err));
+              };
+              targetForm.addEventListener('submit', handleSubmit);
+            }
+            attachFormHandler(form);
+          }
+        });
+      modal.show();
+    });
+  });
+});
+</script>
+{% endblock %}

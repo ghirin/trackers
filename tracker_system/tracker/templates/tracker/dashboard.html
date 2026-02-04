@@ -1,0 +1,82 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Дашборд{% endblock %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card text-white bg-primary mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Автомобилей</h5>
+        <h2 class="card-text">{{ cars_count }}</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-body text-center">
+        <h5 class="card-title">Трекеров</h5>
+        <h2 class="card-text">{{ trackers_count }}</h2>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Последние установки</h5>
+      </div>
+      <div class="card-body p-0">
+        {% if recent_installations %}
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>IMEI</th>
+                <th>Борт N</th>
+                <th>Модель</th>
+                <th>Протокол</th>
+                <th>ДЕРЖ. N</th>
+                <th>SIM Old</th>
+                <th>N Card</th>
+                <th>SIM New</th>
+                <th>S/N Tracker</th>
+                <th>Інв. Номер</th>
+                <th>Інв. Номер Антена</th>
+                <th>Дата установки</th>
+                <th>Коментар</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inst in recent_installations %}
+              <tr>
+                <td>{{ inst.tracker.imei }}</td>
+                <td>{{ inst.car.board_number|default:'-' }}</td>
+                {% if inst.car.location %}
+                <td>{{ inst.car.location.name }}</td>
+                {% else %}
+                <td>-</td>
+                {% endif %}
+                <td>{{ inst.car.get_model_display }}</td>
+                <td>{{ inst.tracker.protocol }}</td>
+                <td>{{ inst.car.state_number }}</td>
+                <td>{{ inst.tracker.sim_old|default:'-' }}</td>
+                <td>{{ inst.tracker.n_card|default:'-' }}</td>
+                <td>{{ inst.tracker.sim_new|default:'-' }}</td>
+                <td>{{ inst.tracker.serial_number }}</td>
+                <td>{{ inst.tracker.inventory_number_tracker|default:'-' }}</td>
+                <td>{{ inst.tracker.inventory_number_antenna|default:'-' }}</td>
+                <td>{{ inst.installation_date|date:"d.m.Y" }}</td>
+                <td>{{ inst.comment|default:'-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-muted">Нет установок за последнее время.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

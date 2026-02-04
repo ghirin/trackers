@@ -1,0 +1,31 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Редактировать трекер{% endblock %}
+{% block content %}
+<form method="post" action="{% if form.instance.pk %}{% url 'tracker:tracker_update' form.instance.pk %}{% else %}{% url 'tracker:tracker_create' %}{% endif %}" enctype="multipart/form-data" class="px-3 pt-2" data-ajax="true">
+  {% csrf_token %}
+  {% for field in form %}
+    <div class="row mb-3 align-items-center">
+      <label class="col-sm-4 col-form-label text-start">{{ field.label }}</label>
+      <div class="col-sm-8">
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div class="form-check">
+            {{ field }}
+          </div>
+        {% else %}
+          {% if field.field.widget.input_type == 'select' %}
+            {{ field|safe }}
+          {% else %}
+            <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" value="{{ field.value|default_if_none:'' }}" class="form-control" id="id_{{ field.html_name }}">
+          {% endif %}
+        {% endif %}
+        {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+  <div class="mt-3 text-end">
+    <button type="submit" class="btn btn-success">Сохранить</button>
+    <a href="{% url 'tracker:tracker_list' %}" class="btn btn-secondary">Отмена</a>
+  </div>
+</form>
+{% endblock %}
