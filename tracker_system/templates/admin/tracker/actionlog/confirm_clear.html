@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Подтвердите очистку логов</h1>
+  <p>Вы собираетесь удалить {{ count }} запись(ей) из журнала действий.</p>
+  <form method="post">{% csrf_token %}
+    <input type="submit" class="default" value="Подтвердить">
+    <a href="..">Отмена</a>
+  </form>
+{% endblock %}

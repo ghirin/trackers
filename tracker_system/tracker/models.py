@@ -31,7 +31,7 @@ class Car(models.Model):
         max_length=50,
         blank=True,
         null=True,
-        help_text="Бортовой номер автомобиля (необязательно)"
+        help_text="Бортовой номер автомобиля"
     )
     
     model = models.CharField(
@@ -196,7 +196,7 @@ class Tracker(models.Model):
     )
     
     holder_number = models.CharField(
-        'Держатель N',
+        'Державний номер',
         max_length=50,
         blank=True,
         null=True
@@ -397,6 +397,85 @@ class ActionLog(models.Model):
         verbose_name = 'Лог действий'
         verbose_name_plural = 'Логи действий'
         ordering = ['-timestamp']
+
+    @classmethod
+    def trim_logs(cls, max_bytes: int = 2 * 1024 * 1024):
+        """Trim oldest ActionLog entries while estimated size exceeds max_bytes.
+
+        Strategy:
+        - If using sqlite with a filesystem DB, use DB file size as approximation.
+        - Otherwise estimate total size by summing JSON-serialized size of each row (object_repr + changes + request_path + ip_address) and delete oldest rows until under limit.
+        """
+        import os
+        import json
+        from django.conf import settings
+
+        # Try to get actual sqlite DB file size when possible
+        db_settings = getattr(settings, 'DATABASES', {}).get('default', {})
+        engine = db_settings.get('ENGINE', '')
+        name = db_settings.get('NAME', '')
+        size = None
+        try:
+            if 'sqlite' in engine and name and os.path.exists(name):
+                size = os.path.getsize(name)
+        except Exception:
+            size = None
+
+        # Fallback: estimate total size from rows
+        sizes = []
+        if size is None:
+            total = 0
+            for r in cls.objects.order_by('timestamp').values('id', 'object_repr', 'changes', 'request_path', 'ip_address'):
+                try:
+                    s = json.dumps({
+                        'object_repr': r.get('object_repr'),
+                        'changes': r.get('changes'),
+                        'request_path': r.get('request_path'),
+                        'ip_address': r.get('ip_address'),
+                    }, ensure_ascii=False, default=str).encode('utf-8')
+                    sz = len(s)
+                except Exception:
+                    sz = 0
+                sizes.append((r['id'], sz))
+                total += sz
+            size = total
+
+        if size <= max_bytes:
+            return
+
+        # Delete oldest entries until size <= max_bytes
+        if sizes:
+            # we have per-row sizes from oldest to newest
+            to_delete = []
+            for id_, sz in sizes:
+                to_delete.append(id_)
+                size -= sz
+                if size <= max_bytes:
+                    break
+            if to_delete:
+                cls.objects.filter(id__in=to_delete).delete()
+        else:
+            # As a last resort delete oldest rows in batches
+            while size > max_bytes:
+                oldest = list(cls.objects.order_by('timestamp')[:100])
+                if not oldest:
+                    break
+                sub = 0
+                ids = []
+                for o in oldest:
+                    try:
+                        s = json.dumps({
+                            'object_repr': o.object_repr,
+                            'changes': o.changes,
+                            'request_path': o.request_path,
+                            'ip_address': o.ip_address,
+                        }, ensure_ascii=False, default=str).encode('utf-8')
+                        sub += len(s)
+                    except Exception:
+                        pass
+                    ids.append(o.id)
+                cls.objects.filter(id__in=ids).delete()
+                size -= sub
 
     def __str__(self):
         return f"{self.timestamp} - {self.user or 'system'} - {self.action} - {self.object_repr}"

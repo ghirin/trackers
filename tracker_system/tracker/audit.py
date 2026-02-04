@@ -89,6 +89,12 @@ def _post_save(sender, instance, created, **kwargs):
             request_path=request_path,
             ip_address=ip
         )
+        # After creating a log, ensure storage doesn't grow beyond threshold
+        try:
+            ActionLog.trim_logs()
+        except Exception:
+            # Never let trimming break user request
+            pass
     except Exception as e:
         # avoid failing the request because logging failed
         print('ActionLog save error:', e)
@@ -138,5 +144,10 @@ def _post_delete(sender, instance, **kwargs):
             request_path=request_path,
             ip_address=ip
         )
+        # Trim logs after delete event as well
+        try:
+            ActionLog.trim_logs()
+        except Exception:
+            pass
     except Exception as e:
         print('ActionLog save error (delete):', e)

@@ -264,10 +264,51 @@ def export_logs_json(modeladmin, request, queryset):
     return response
 
 
+@admin.action(description='Clear selected logs')
+def clear_selected_logs(modeladmin, request, queryset):
+    count = queryset.count()
+    queryset.delete()
+    modeladmin.message_user(request, f'Cleared {count} selected log(s).')
+
+
 @admin.register(ActionLog)
 class ActionLogAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/tracker/actionlog/change_list.html'
+
     list_display = ('timestamp', 'user', 'action', 'object_repr', 'content_type', 'object_id')
     list_filter = ('action', 'content_type', 'timestamp')
     search_fields = ('user__username', 'object_repr', 'changes')
     readonly_fields = ('timestamp', 'user', 'action', 'object_repr', 'content_type', 'object_id', 'changes', 'request_path', 'ip_address')
-    actions = [export_logs_csv, export_logs_json]
+    actions = [export_logs_csv, export_logs_json, clear_selected_logs]
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('clear-logs/', self.admin_site.admin_view(self.clear_all_logs_view), name='tracker_actionlog_clear_logs'),
+        ]
+        return custom_urls + urls
+
+    def clear_all_logs_view(self, request):
+        # only allow POST for destructive action
+        from django.shortcuts import redirect
+        if request.method == 'POST':
+            count = ActionLog.objects.count()
+            ActionLog.objects.all().delete()
+            self.message_user(request, f'Cleared {count} log(s).')
+            return redirect('..')
+        # If GET, render a simple confirmation
+        from django.template.response import TemplateResponse
+        context = dict(
+            self.admin_site.each_context(request),
+            title='Confirm clear ActionLog',
+            count=ActionLog.objects.count(),
+        )
+        return TemplateResponse(request, 'admin/tracker/actionlog/confirm_clear.html', context)
+
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        from django.urls import reverse
+        extra_context['clear_logs_url'] = reverse('admin:tracker_actionlog_clear_logs')
+        return super().changelist_view(request, extra_context=extra_context)

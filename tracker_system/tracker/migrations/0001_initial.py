@@ -151,7 +151,7 @@ class Migration(migrations.Migration):
                 (
                     "holder_number",
                     models.CharField(
-                        blank=True, max_length=50, null=True, verbose_name="Держатель N"
+                        blank=True, max_length=50, null=True, verbose_name="Державний номер"
                     ),
                 ),
                 (
