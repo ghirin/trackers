@@ -12,17 +12,53 @@
             {{ field }}
           </div>
         {% else %}
-          {% if field.field.widget.input_type == 'select' or field.field.widget.input_type == 'date' %}
-            {{ field|safe }}
-          {% else %}
-            <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" value="{{ field.value|default_if_none:'' }}" class="form-control" id="id_{{ field.html_name }}">
-          {% endif %}
+          {{ field }}
         {% endif %}
-        {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+
+        {% if field.name == 'order_document' %}
+          {# Show warning only when there are no orders at all and the current installation has no order attached #}
+          {% if not order_docs_exist and not form.instance.order_document %}
+            <div class="alert alert-warning small mt-2" role="alert">
+              Нет доступных приказов. <a href="{% url 'admin:tracker_orderdocument_add' %}" target="_blank" rel="noopener"><i class="fa fa-plus me-1" aria-hidden="true"></i>Создать новый элемент</a>
+            </div>
+          {% else %}
+            <small class="form-text text-muted">{{ field.help_text }}</small>
+          {% endif %}
+        {% else %}
+          {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+        {% endif %}
+
         {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
       </div>
     </div>
   {% endfor %}
+
+<script>
+// Client-side guard: if no order selected, show an inline alert and prevent submit (for page-level form)
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form[data-ajax="true"]');
+  if (!form || form.closest('.modal')) return; // only for page forms
+  form.addEventListener('submit', function(e) {
+    const select = form.querySelector('[name="order_document"]');
+    if (!select) return; // nothing to validate
+    if (!select.value) {
+      e.preventDefault();
+      // show alert near the select
+      let alertEl = form.querySelector('#order-required-alert');
+      if (!alertEl) {
+        alertEl = document.createElement('div');
+        alertEl.id = 'order-required-alert';
+        alertEl.className = 'alert alert-danger mt-2';
+        alertEl.role = 'alert';
+        alertEl.innerHTML = 'Поле "Приказ" обязательно. <a class="btn btn-sm btn-outline-primary ms-2" href="{% url "admin:tracker_orderdocument_add" %}" target="_blank" rel="noopener">Создать приказ</a>';
+        const wrapper = select.closest('.col-sm-8');
+        if (wrapper) wrapper.appendChild(alertEl);
+      }
+      select.focus();
+    }
+  });
+});
+</script>
   <div class="mt-3 text-end">
     <button type="submit" class="btn btn-success">Сохранить</button>
     <a href="{% url 'tracker:installation_list' %}" class="btn btn-secondary">Отмена</a>

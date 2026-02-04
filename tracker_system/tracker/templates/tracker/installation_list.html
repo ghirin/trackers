@@ -1,21 +1,31 @@
 {% extends 'tracker/base.html' %}
+{% load sort_tags %}
 {% block title %}Список установок{% endblock %}
 {% block content %}
 <div class="card mb-4">
   <div class="card-header bg-info text-white">
     <h5 class="mb-0">История установок</h5>
+    <a href="{% url 'tracker:installation_create' %}" class="btn btn-success btn-sm float-end" role="button"><i class="fa fa-plus me-1" aria-hidden="true"></i>Создать новый элемент</a>
   </div>
   <div class="card-body p-0">
+    {% if not order_docs_exist %}
+      <div class="px-3 pt-3">
+        <div class="alert alert-warning small" role="alert">
+          Нет доступных приказов. <a href="{% url 'admin:tracker_orderdocument_add' %}" target="_blank" rel="noopener"><i class="fa fa-plus me-1" aria-hidden="true"></i>Создать новый элемент</a>
+        </div>
+      </div>
+    {% endif %}
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table class="table table-hover table-striped">
         <thead>
           <tr>
-            <th>Автомобиль</th>
-            <th>Трекер</th>
-            <th>Дата установки</th>
-            <th>Дата снятия</th>
-            <th>Статус</th>
-            <th>Комментарий</th>
+            <th class="sortable" aria-sort="{% aria_sort 'car' %}"><a href="{% sort_url 'car' %}">Автомобиль{% sort_indicator 'car' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'tracker' %}"><a href="{% sort_url 'tracker' %}">Трекер{% sort_indicator 'tracker' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'tracker_location' %}"><a href="{% sort_url 'tracker_location' %}">Локация трекера{% sort_indicator 'tracker_location' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'order_document' %}"><a href="{% sort_url 'order_document' %}">Приказ{% sort_indicator 'order_document' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'installation_date' %}"><a href="{% sort_url 'installation_date' %}">Дата установки{% sort_indicator 'installation_date' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'removal_date' %}"><a href="{% sort_url 'removal_date' %}">Дата снятия{% sort_indicator 'removal_date' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'is_active' %}"><a href="{% sort_url 'is_active' %}">Статус / Комментарий{% sort_indicator 'is_active' %}</a></th>
           </tr>
         </thead>
         <tbody>
@@ -23,10 +33,17 @@
           <tr data-pk="{{ inst.pk }}">
             <td>{{ inst.car.board_number }}</td>
             <td>{{ inst.tracker.serial_number }}</td>
+            <td>{{ inst.tracker.current_location|default:"-" }}</td>
+            <td>{% if inst.order_document %}<a href="/admin/tracker/orderdocument/{{ inst.order_document.pk }}/change/">{{ inst.order_document.document_number|default:inst.order_document.document }}</a>{% else %}-{% endif %}</td>
             <td>{{ inst.installation_date|date:"d.m.Y" }}</td>
-            <td>{{ inst.removal_date|date:"d.m.Y"|default:"-" }}</td>
-            <td>{% if inst.is_active %}<span class="badge bg-success">Активна</span>{% else %}<span class="badge bg-secondary">Завершена</span>{% endif %}</td>
-            <td>{{ inst.comment|default:"-" }}</td>
+            <td class="text-center">{{ inst.removal_date|date:"d.m.Y"|default:"-" }}</td>
+            <td class="text-center">{% if inst.is_active %}<div><span class="badge-yes">Активна</span></div>{% else %}<div><span class="badge bg-secondary">Завершена</span></div>{% endif %}
+              {% if inst.comment %}
+                <div class="small text-muted mt-1 text-truncate" style="max-width:16rem; display:inline-block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" data-bs-toggle="tooltip" title="{{ inst.comment }}">{{ inst.comment }}</div>
+              {% else %}
+                <div class="small text-muted mt-1">-</div>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

@@ -19,7 +19,7 @@ class CarListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = Car.objects.all().order_by('board_number')
+        queryset = Car.objects.all()
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -28,6 +28,25 @@ class CarListView(LoginRequiredMixin, ListView):
                 Q(location__icontains=search_query) |
                 Q(comment__icontains=search_query)
             )
+        # Sorting
+        sort = self.request.GET.get('sort')
+        allowed = {
+            'state_number': 'state_number',
+            'board_number': 'board_number',
+            'model': 'model',
+            'location': 'location__name',
+            'is_active': 'is_active',
+            'comment': 'comment',
+            'created_at': 'created_at',
+        }
+        if sort:
+            desc = sort.startswith('-')
+            key = sort[1:] if desc else sort
+            field = allowed.get(key)
+            if field:
+                queryset = queryset.order_by(f"{'-' if desc else ''}{field}")
+        else:
+            queryset = queryset.order_by('board_number')
         return queryset
 
 class CarDetailView(LoginRequiredMixin, DetailView):
@@ -89,7 +108,7 @@ class TrackerListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = Tracker.objects.all().order_by('serial_number')
+        queryset = Tracker.objects.all()
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -98,7 +117,33 @@ class TrackerListView(LoginRequiredMixin, ListView):
                 Q(model__icontains=search_query) |
                 Q(comment__icontains=search_query)
             )
-        return queryset
+        sort = self.request.GET.get('sort')
+        allowed = {
+            'serial_number': 'serial_number',
+            'imei': 'imei',
+            'model': 'model',
+            'protocol': 'protocol',
+            'is_active': 'is_active',
+            'created_at': 'created_at',
+            'inventory_number_tracker': 'inventory_number_tracker',
+            'inventory_number_antenna': 'inventory_number_antenna',
+            'holder_number': 'holder_number',
+            'sim_old': 'sim_old',
+            'n_card': 'n_card',
+            'sim_new': 'sim_new',
+            'comment': 'comment',
+            'location': 'installations__car__location__name',
+        }
+        if sort:
+            desc = sort.startswith('-')
+            key = sort[1:] if desc else sort
+            field = allowed.get(key)
+            if field:
+                queryset = queryset.order_by(f"{'-' if desc else ''}{field}")
+        else:
+            queryset = queryset.order_by('serial_number')
+        # prevent duplicate trackers due to joins on reverse FK when sorting by related fields
+        return queryset.distinct()
 
 # API для получения истории установок в JSON
 def installation_history_api(request, car_id=None, tracker_id=None):
@@ -156,7 +201,27 @@ class ReportView(LoginRequiredMixin, TemplateView):
         serial = self.request.GET.get('serial')
         sim = self.request.GET.get('sim')
 
-        qs = InstallationHistory.objects.select_related('car__location', 'tracker').order_by('-installation_date')
+        qs = InstallationHistory.objects.select_related('car__location', 'tracker')
+        # apply sorting from GET
+        sort = self.request.GET.get('sort')
+        allowed = {
+            'car': 'car__board_number',
+            'board_number': 'car__board_number',
+            'state_number': 'car__state_number',
+            'location': 'car__location__name',
+            'tracker': 'tracker__serial_number',
+            'installation_date': 'installation_date',
+            'removal_date': 'removal_date',
+            'is_active': 'is_active',
+        }
+        if sort:
+            desc = sort.startswith('-')
+            key = sort[1:] if desc else sort
+            field = allowed.get(key)
+            if field:
+                qs = qs.order_by(f"{'-' if desc else ''}{field}")
+        else:
+            qs = qs.order_by('-installation_date')
         if date_from:
             qs = qs.filter(installation_date__gte=date_from)
         if date_to:
@@ -229,13 +294,25 @@ def export_installations_xlsx(request):
     ws = wb.active
     ws.title = 'Installations'
 
-    headers = ['Автомобиль (бортовой/державний)', 'Локация', 'Трекер (S/N)', 'Дата установки', 'Дата снятия', 'Активна', 'Комментарий']
+    from openpyxl.styles import PatternFill
+
+    headers = ['Бортовой номер', 'Державний номер', 'Локация', 'Трекер (S/N)', 'Дата установки', 'Дата снятия', 'Активна', 'Комментарий']
     ws.append(headers)
 
+    # header fill
+    header_fill = PatternFill(fill_type='solid', fgColor='FFDDEAF6')
+    for c in ws[1]:
+        c.fill = header_fill
+
+    # Write rows and apply zebra fill
+    odd_fill = PatternFill(fill_type='solid', fgColor='FFFFFFFF')
+    even_fill = PatternFill(fill_type='solid', fgColor='FFEDF7FF')
+    row_idx = 2
     for inst in qs:
         loc_value = inst.car.location.name if inst.car.location else '-'
         row = [
-            f"{inst.car.board_number or '-'} / {inst.car.state_number}",
+            inst.car.board_number or '-',
+            inst.car.state_number or '-',
             loc_value,
             inst.tracker.serial_number,
             inst.installation_date.strftime('%Y-%m-%d'),
@@ -244,6 +321,11 @@ def export_installations_xlsx(request):
             inst.comment or '',
         ]
         ws.append(row)
+        # apply fill to the newly appended row
+        fill = even_fill if row_idx % 2 == 0 else odd_fill
+        for cell in ws[row_idx]:
+            cell.fill = fill
+        row_idx += 1
 
     # Auto width
     for i, column_cells in enumerate(ws.columns, 1):
@@ -273,7 +355,13 @@ class TrackerCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Трекер успешно создан')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # If a car was selected during creation, create an active installation
+        current_car = form.cleaned_data.get('current_car', None)
+        if current_car:
+            today = timezone.now().date()
+            InstallationHistory.objects.create(car=current_car, tracker=self.object, installation_date=today, is_active=True, comment='Назначено из формы трекера')
+        return response
 
 
 class TrackerUpdateView(LoginRequiredMixin, UpdateView):
@@ -291,7 +379,26 @@ class TrackerUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Изменения сохранены')
+        # capture selection before save
+        selected_car = form.cleaned_data.get('current_car', None)
         response = super().form_valid(form)
+        # Apply changes to installations if needed
+        today = timezone.now().date()
+        active = self.object.installations.filter(is_active=True).first()
+        # assign to a car
+        if selected_car:
+            if not active or active.car_id != selected_car.id:
+                if active:
+                    active.is_active = False
+                    active.removal_date = today
+                    active.save()
+                InstallationHistory.objects.create(car=selected_car, tracker=self.object, installation_date=today, is_active=True, comment='Назначено из формы трекера')
+        else:
+            # clearing assignment: deactivate any active installation
+            if active:
+                active.is_active = False
+                active.removal_date = today
+                active.save()
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return HttpResponse('OK')
         return response
@@ -314,7 +421,32 @@ class InstallationListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return InstallationHistory.objects.select_related('car', 'tracker').order_by('-installation_date')
+        queryset = InstallationHistory.objects.select_related('car', 'tracker')
+        sort = self.request.GET.get('sort')
+        allowed = {
+            'car': 'car__board_number',
+            'tracker': 'tracker__serial_number',
+            'tracker_location': 'tracker__installations__car__location__name',
+            'installation_date': 'installation_date',
+            'removal_date': 'removal_date',
+            'is_active': 'is_active',
+        }
+        if sort:
+            desc = sort.startswith('-')
+            key = sort[1:] if desc else sort
+            field = allowed.get(key)
+            if field:
+                queryset = queryset.order_by(f"{'-' if desc else ''}{field}")
+        else:
+            queryset = queryset.order_by('-installation_date')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """Expose whether any OrderDocument exists so the template can show a global prompt only when needed."""
+        context = super().get_context_data(**kwargs)
+        from .models import OrderDocument
+        context['order_docs_exist'] = OrderDocument.objects.exists()
+        return context
 
 
 class InstallationCreateView(LoginRequiredMixin, CreateView):
@@ -322,6 +454,12 @@ class InstallationCreateView(LoginRequiredMixin, CreateView):
     form_class = InstallationForm
     template_name = 'tracker/installation_form.html'
     success_url = reverse_lazy('tracker:installation_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import OrderDocument
+        context['order_docs_exist'] = OrderDocument.objects.exists()
+        return context
 
     def form_valid(self, form):
         messages.success(self.request, 'Установка успешно создана')
@@ -354,7 +492,33 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['recent_installations'] = InstallationHistory.objects.select_related('car', 'tracker').order_by('-installation_date')[:10]
+        # Support sorting on dashboard recent installations via ?sort=
+        sort = self.request.GET.get('sort')
+        allowed = {
+            'imei': 'tracker__imei',
+            'board_number': 'car__board_number',
+            'model': 'car__model',
+            'protocol': 'tracker__protocol',
+            'state_number': 'car__state_number',
+            'sim_old': 'tracker__sim_old',
+            'n_card': 'tracker__n_card',
+            'sim_new': 'tracker__sim_new',
+            'serial_number': 'tracker__serial_number',
+            'inventory_number_tracker': 'tracker__inventory_number_tracker',
+            'inventory_number_antenna': 'tracker__inventory_number_antenna',
+            'installation_date': 'installation_date',
+            'comment': 'comment',
+        }
+        qs = InstallationHistory.objects.select_related('car', 'tracker')
+        if sort:
+            desc = sort.startswith('-')
+            key = sort[1:] if desc else sort
+            field = allowed.get(key)
+            if field:
+                qs = qs.order_by(f"{'-' if desc else ''}{field}")
+        else:
+            qs = qs.order_by('-installation_date')
+        context['recent_installations'] = qs[:10]
         context['cars_count'] = Car.objects.count()
         context['trackers_count'] = Tracker.objects.count()
         return context

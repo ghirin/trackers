@@ -3,6 +3,7 @@
 {% block content %}
 <form method="post" action="{% if form.instance.pk %}{% url 'tracker:tracker_update' form.instance.pk %}{% else %}{% url 'tracker:tracker_create' %}{% endif %}" enctype="multipart/form-data" class="px-3 pt-2" data-ajax="true">
   {% csrf_token %}
+
   {% for field in form %}
     <div class="row mb-3 align-items-center">
       <label class="col-sm-4 col-form-label text-start">{{ field.label }}</label>
@@ -12,13 +13,12 @@
             {{ field }}
           </div>
         {% else %}
-          {% if field.field.widget.input_type == 'select' %}
-            {{ field|safe }}
-          {% else %}
-            <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" value="{{ field.value|default_if_none:'' }}" class="form-control" id="id_{{ field.html_name }}">
-          {% endif %}
+          {{ field }}
         {% endif %}
         {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+        {% if field.name == 'current_car' and form.instance.pk %}
+          <div class="mt-2 text-muted small">Текущая локация: <strong>{{ form.instance.current_location }}</strong></div>
+        {% endif %}
         {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
       </div>
     </div>

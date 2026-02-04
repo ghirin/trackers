@@ -1,36 +1,54 @@
 {% extends 'tracker/base.html' %}
+{% load sort_tags %}
 {% block title %}Список трекеров{% endblock %}
 {% block content %}
 <div class="card mb-4">
   <div class="card-header bg-primary text-white">
     <h5 class="mb-0">Трекеры</h5>
+    <a href="{% url 'tracker:tracker_create' %}" class="btn btn-success btn-sm float-end" role="button">Создать новый</a>
   </div>
-  <div class="card-body p-0">
+  <div class="card-body p=0">
     <div class="table-responsive">
-      <table class="table table-hover" id="tracker-table">
+      <table class="table table-hover table-striped" id="tracker-table">
         <thead>
           <tr>
-            <th>Серийный номер</th>
-            <th>IMEI</th>
-            <th>Модель</th>
-            <th>Статус</th>
-            <th>Комментарий</th>
+            <th class="sortable" aria-sort="{% aria_sort 'imei' %}"><a href="{% sort_url 'imei' %}" data-bs-toggle="tooltip" title="Сортировать по IMEI" aria-label="Сортировать по IMEI">IMEI{% sort_indicator 'imei' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'serial_number' %}"><a href="{% sort_url 'serial_number' %}" data-bs-toggle="tooltip" title="Сортировать по S/N трекера" aria-label="Сортировать по S/N трекера">S/N трекера{% sort_indicator 'serial_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'inventory_number_tracker' %}"><a href="{% sort_url 'inventory_number_tracker' %}" data-bs-toggle="tooltip" title="Сортировать по инвентарному номеру трекера" aria-label="Сортировать по инвентарному номеру трекера">Инвентарный номер трекера{% sort_indicator 'inventory_number_tracker' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'inventory_number_antenna' %}"><a href="{% sort_url 'inventory_number_antenna' %}" data-bs-toggle="tooltip" title="Сортировать по инвентарному номеру антенны" aria-label="Сортировать по инвентарному номеру антенны">Инвентарный номер антенны{% sort_indicator 'inventory_number_antenna' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'model' %}"><a href="{% sort_url 'model' %}" data-bs-toggle="tooltip" title="Сортировать по модели трекера" aria-label="Сортировать по модели трекера">Модель трекера{% sort_indicator 'model' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'protocol' %}"><a href="{% sort_url 'protocol' %}" data-bs-toggle="tooltip" title="Сортировать по протоколу" aria-label="Сортировать по протоколу">Протокол{% sort_indicator 'protocol' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'holder_number' %}"><a href="{% sort_url 'holder_number' %}" data-bs-toggle="tooltip" title="Сортировать по державному номеру" aria-label="Сортировать по державному номеру">Державний номер{% sort_indicator 'holder_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'location' %}"><a href="{% sort_url 'location' %}" data-bs-toggle="tooltip" title="Сортировать по локации" aria-label="Сортировать по локации">Локация{% sort_indicator 'location' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'sim_old' %}"><a href="{% sort_url 'sim_old' %}" data-bs-toggle="tooltip" title="Сортировать по старому SIM" aria-label="Сортировать по старому SIM">Старый SIM{% sort_indicator 'sim_old' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'n_card' %}"><a href="{% sort_url 'n_card' %}" data-bs-toggle="tooltip" title="Сортировать по N Card" aria-label="Сортировать по N Card">N Card{% sort_indicator 'n_card' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'sim_new' %}"><a href="{% sort_url 'sim_new' %}" data-bs-toggle="tooltip" title="Сортировать по новому SIM" aria-label="Сортировать по новому SIM">Новый SIM{% sort_indicator 'sim_new' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'comment' %}"><a href="{% sort_url 'comment' %}" data-bs-toggle="tooltip" title="Сортировать по комментарию" aria-label="Сортировать по комментарию">Комментарий{% sort_indicator 'comment' %}</a></th>
+            <th class="sortable text-center" aria-sort="{% aria_sort 'is_active' %}"><a href="{% sort_url 'is_active' %}" data-bs-toggle="tooltip" title="Сортировать по активности" aria-label="Сортировать по активности">Активен{% sort_indicator 'is_active' %}</a></th>
           </tr>
         </thead>
         <tbody>
           {% for tracker in trackers %}
           <tr data-edit-url="{% url 'tracker:tracker_update' tracker.pk %}">
-            <td>{{ tracker.serial_number }}</td>
             <td>{{ tracker.imei }}</td>
+            <td>{{ tracker.serial_number }}</td>
+            <td>{{ tracker.inventory_number_tracker }}</td>
+            <td>{{ tracker.inventory_number_antenna|default:"-" }}</td>
             <td>{{ tracker.model }}</td>
-            <td>
+            <td>{{ tracker.get_protocol_display }}</td>
+            <td>{{ tracker.holder_number|default:"-" }}</td>
+            <td>{{ tracker.current_location|default:"-" }}</td>
+            <td>{{ tracker.sim_old|default:"-" }}</td>
+            <td>{{ tracker.n_card|default:"-" }}</td>
+            <td>{{ tracker.sim_new|default:"-" }}</td>
+            <td>{{ tracker.comment|default:"-" }}</td>
+            <td class="text-center">
               {% if tracker.is_active %}
-                <span class="badge bg-success">Активен</span>
+                <input type="checkbox" class="status-checkbox" disabled checked aria-checked="true" title="Активен" aria-label="Активен">
               {% else %}
-                <span class="badge bg-danger">Неактивен</span>
+                <span class="status-cross text-danger" role="img" aria-label="Не активен" title="Не активен">✖</span>
               {% endif %}
             </td>
-            <td>{{ tracker.comment|default:"-" }}</td>
           </tr>
           {% endfor %}
         </tbody>

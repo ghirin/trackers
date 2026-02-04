@@ -17,7 +17,7 @@
       <dd class="col-sm-9">{{ tracker.model }}</dd>
 
       <dt class="col-sm-3">Статус</dt>
-      <dd class="col-sm-9">{% if tracker.is_active %}<span class="badge bg-success">Активен</span>{% else %}<span class="badge bg-danger">Неактивен</span>{% endif %}</dd>
+      <dd class="col-sm-9">{% if tracker.is_active %}<span class="badge-yes">Активен</span>{% else %}<span class="badge bg-danger">Неактивен</span>{% endif %}</dd>
 
       <dt class="col-sm-3">Комментарий</dt>
       <dd class="col-sm-9">{{ tracker.comment|default:'-' }}</dd>

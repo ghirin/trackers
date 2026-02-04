@@ -247,6 +247,14 @@ class Tracker(models.Model):
     def __str__(self):
         return f"{self.serial_number} (IMEI: {self.imei})"
 
+    @property
+    def current_location(self):
+        """Return the name of the location of the car where this tracker is currently active, or '-' if none."""
+        active = self.installations.filter(is_active=True).select_related('car__location').order_by('-installation_date').first()
+        if active and active.car and active.car.location:
+            return active.car.location.name
+        return '-'
+
 class InstallationHistory(models.Model):
     """История установки трекеров на автомобили"""
     car = models.ForeignKey(
@@ -282,6 +290,15 @@ class InstallationHistory(models.Model):
         'Комментарий к установке',
         blank=True,
         null=True
+    )
+
+    order_document = models.ForeignKey(
+        'OrderDocument',
+        verbose_name='Приказ',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='installations'
     )
     
     created_at = models.DateTimeField(

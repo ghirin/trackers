@@ -113,12 +113,12 @@ class TrackerAdmin(ImportExportModelAdmin):
     fieldsets = (
         ('Основная информация', {
             'fields': (
-                'serial_number', 'imei', 'model', 'protocol',
+                'serial_number', 'imei', 'model', 'protocol', 'holder_number',
                 'inventory_number_tracker', 'inventory_number_antenna'
             )
         }),
         ('SIM карты', {
-            'fields': ('holder_number', 'sim_old', 'n_card', 'sim_new'),
+            'fields': ('sim_old', 'n_card', 'sim_new'),
             'classes': ('collapse',)
         }),
         ('Дополнительная информация', {

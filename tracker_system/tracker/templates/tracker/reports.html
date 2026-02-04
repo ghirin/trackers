@@ -1,4 +1,5 @@
 {% extends 'tracker/base.html' %}
+{% load sort_tags %}
 {% block title %}Отчёты{% endblock %}
 {% block content %}
 <div class="row mb-4">
@@ -87,31 +88,33 @@
     </form>
 
     <div class="table-responsive mt-3">
-      <table class="table table-hover">
+      <table class="table table-hover table-striped">
         <thead>
           <tr>
-            <th>Автомобиль</th>
-            <th>Локация</th>
-            <th>Трекер</th>
-            <th>Дата установки</th>
-            <th>Дата снятия</th>
-            <th>Статус</th>
-            <th>Комментарий</th>
+            <th class="sortable" aria-sort="{% aria_sort 'board_number' %}"><a href="{% sort_url 'board_number' %}">Бортовой номер{% sort_indicator 'board_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'state_number' %}"><a href="{% sort_url 'state_number' %}">Державний номер{% sort_indicator 'state_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'location' %}"><a href="{% sort_url 'location' %}">Локация{% sort_indicator 'location' %}</a></th>
+            <th><a href="{% sort_url 'tracker' %}">Трекер{% sort_indicator 'tracker' %}</a></th>
+            <th><a href="{% sort_url 'installation_date' %}">Дата установки{% sort_indicator 'installation_date' %}</a></th>
+            <th><a href="{% sort_url 'removal_date' %}">Дата снятия{% sort_indicator 'removal_date' %}</a></th>
+            <th><a href="{% sort_url 'is_active' %}">Статус{% sort_indicator 'is_active' %}</a></th>
+            <th><a href="{% sort_url 'comment' %}">Комментарий{% sort_indicator 'comment' %}</a></th>
           </tr>
         </thead>
         <tbody>
           {% for inst in installations %}
           <tr>
-            <td>{{ inst.car.board_number }} / {{ inst.car.state_number }}</td>
+            <td>{{ inst.car.board_number|default:"-" }}</td>
+            <td>{{ inst.car.state_number|default:"-" }}</td>
             <td>{{ inst.car.location|default:'-' }}</td>
             <td>{{ inst.tracker.serial_number }}</td>
             <td>{{ inst.installation_date|date:"d.m.Y" }}</td>
             <td>{{ inst.removal_date|date:"d.m.Y"|default:"-" }}</td>
-            <td>{% if inst.is_active %}<span class="badge bg-success">Активна</span>{% else %}<span class="badge bg-secondary">Завершена</span>{% endif %}</td>
+            <td>{% if inst.is_active %}<span class="badge-yes">Активна</span>{% else %}<span class="badge bg-secondary">Завершена</span>{% endif %}</td>
             <td>{{ inst.comment|default:"-" }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" class="text-center text-muted">Нет записей по указанным фильтрам.</td></tr>
+          <tr><td colspan="8" class="text-center text-muted">Нет записей по указанным фильтрам.</td></tr>
           {% endfor %}
         </tbody>
       </table>

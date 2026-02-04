@@ -1,21 +1,23 @@
 {% extends 'tracker/base.html' %}
+{% load sort_tags %}
 {% block title %}Список автомобилей{% endblock %}
 {% block content %}
 <div class="card mb-4">
   <div class="card-header bg-primary text-white">
     <h5 class="mb-0">Автомобили</h5>
+    <a href="{% url 'tracker:car_create' %}" class="btn btn-success btn-sm float-end" role="button"><i class="fa fa-plus me-1" aria-hidden="true"></i>Создать новый элемент</a>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table class="table table-hover table-striped">
         <thead>
           <tr>
-            <th>Державний номер</th>
-            <th>Бортовой номер</th>
-            <th>Модель</th>
-            <th>Локация</th>
-            <th>Статус</th>
-            <th>Комментарий</th>
+            <th class="sortable" aria-sort="{% aria_sort 'state_number' %}"><a href="{% sort_url 'state_number' %}">Державний номер{% sort_indicator 'state_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'board_number' %}"><a href="{% sort_url 'board_number' %}">Бортовой номер{% sort_indicator 'board_number' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'model' %}"><a href="{% sort_url 'model' %}">Модель{% sort_indicator 'model' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'location' %}"><a href="{% sort_url 'location' %}">Локация{% sort_indicator 'location' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'is_active' %}"><a href="{% sort_url 'is_active' %}">Статус{% sort_indicator 'is_active' %}</a></th>
+            <th class="sortable" aria-sort="{% aria_sort 'comment' %}"><a href="{% sort_url 'comment' %}">Комментарий{% sort_indicator 'comment' %}</a></th>
           </tr>
         </thead>
         <tbody>
@@ -25,7 +27,7 @@
             <td>{{ car.board_number|default:"-" }}</td>
             <td>{{ car.get_model_display }}</td>
             <td>{{ car.location|default:"-" }}</td>
-            <td>{% if car.is_active %}<span class="badge bg-success">Активен</span>{% else %}<span class="badge bg-danger">Неактивен</span>{% endif %}</td>
+            <td>{% if car.is_active %}<span class="badge-yes">Активен</span>{% else %}<span class="badge bg-danger">Неактивен</span>{% endif %}</td>
             <td>{{ car.comment|default:"-" }}</td>
           </tr>
           {% endfor %}

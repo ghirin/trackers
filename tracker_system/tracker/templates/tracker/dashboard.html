@@ -28,22 +28,23 @@
       <div class="card-body p-0">
         {% if recent_installations %}
         <div class="table-responsive">
-          <table class="table table-striped mb-0">
+          {% load sort_tags %}
+      <table class="table table-striped mb-0">
             <thead>
               <tr>
-                <th>IMEI</th>
-                <th>Борт N</th>
-                <th>Модель</th>
-                <th>Протокол</th>
-                <th>ДЕРЖАВНИЙ НОМЕР</th>
-                <th>SIM Стара</th>
-                <th>Номер картки</th>
-                <th>SIM Нова</th>
-                <th>S/N Tracker</th>
-                <th>Інвентариний Номер</th>
-                <th>Інв. Номер Антена</th>
-                <th>Дата установки</th>
-                <th>Коментар</th>
+                <th class="sortable" aria-sort="{% aria_sort 'imei' %}"><a href="{% sort_url 'imei' %}">IMEI{% sort_indicator 'imei' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'board_number' %}"><a href="{% sort_url 'board_number' %}">Борт N{% sort_indicator 'board_number' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'model' %}"><a href="{% sort_url 'model' %}">Модель{% sort_indicator 'model' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'protocol' %}"><a href="{% sort_url 'protocol' %}">Протокол{% sort_indicator 'protocol' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'state_number' %}"><a href="{% sort_url 'state_number' %}">ДЕРЖАВНИЙ НОМЕР{% sort_indicator 'state_number' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'sim_old' %}"><a href="{% sort_url 'sim_old' %}">SIM Стара{% sort_indicator 'sim_old' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'n_card' %}"><a href="{% sort_url 'n_card' %}">Номер картки{% sort_indicator 'n_card' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'sim_new' %}"><a href="{% sort_url 'sim_new' %}">SIM Нова{% sort_indicator 'sim_new' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'serial_number' %}"><a href="{% sort_url 'serial_number' %}">S/N Tracker{% sort_indicator 'serial_number' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'inventory_number_tracker' %}"><a href="{% sort_url 'inventory_number_tracker' %}">Інвентариний Номер{% sort_indicator 'inventory_number_tracker' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'inventory_number_antenna' %}"><a href="{% sort_url 'inventory_number_antenna' %}">Інв. Номер Антена{% sort_indicator 'inventory_number_antenna' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'installation_date' %}"><a href="{% sort_url 'installation_date' %}">Дата установки{% sort_indicator 'installation_date' %}</a></th>
+                <th class="sortable" aria-sort="{% aria_sort 'comment' %}"><a href="{% sort_url 'comment' %}">Коментар{% sort_indicator 'comment' %}</a></th>
               </tr>
             </thead>
             <tbody>

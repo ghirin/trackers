@@ -29,6 +29,36 @@
         .status-active { color: #28a745; }
         .status-inactive { color: #dc3545; }
         .table-hover tbody tr:hover { background-color: #f8f9fa; }
+        :root {
+            --primary: #0b5ed7; /* primary brand color */
+            --accent: #0d6efd;  /* accent */
+            --table-header-bg: #cfe8ff; /* header background */
+            --table-striped-even: #e6f4ff; /* even row */
+            --table-striped-odd: #ffffff; /* odd row */
+            --table-header-text: #003366; /* header text */
+        }
+        /* Sortable header visuals */
+        .sortable a { cursor: pointer; text-decoration: none; color: inherit; }
+        .sortable a:hover { text-decoration: underline; }
+        /* Tuned zebra stripe colors (white / light-azure) and header */
+        .table-striped tbody tr:nth-child(odd) { background-color: var(--table-striped-odd); }
+        .table-striped tbody tr:nth-child(even) { background-color: var(--table-striped-even); }
+        /* header color using brand variable */
+        .table thead th { background-color: var(--table-header-bg); color: var(--table-header-text); }
+        /* Slight emphasis for active badge */
+        .badge-yes { background-color: var(--primary); color: #fff; }
+        /* Status checkbox appearance */
+        .status-checkbox { width: 1.15rem; height: 1.15rem; vertical-align: middle; }
+        /* Color checked checkbox green where supported */
+        .status-checkbox:checked { accent-color: #28a745; }
+        /* Cross for inactive status */
+        .status-cross { font-weight: 600; font-size: 1.1rem; line-height: 1; vertical-align: middle; }
+        /* Print-friendly: remove background colors for printing and rely on borders */
+        @media print {
+            .table-striped tbody tr:nth-child(odd), .table-striped tbody tr:nth-child(even) { background-color: #ffffff !important; color: #000 !important; }
+            .table thead th { background-color: #f2f2f2 !important; color: #000 !important; }
+            .table { color: #000; }
+        }
     </style>
 </head>
 <body>
@@ -95,6 +125,11 @@
         console.error('Ajax form submit failed', err);
         if (modalBody) modalBody.innerHTML = '<div class="alert alert-danger">Ошибка при сохранении. Попробуйте ещё раз.</div>';
       });
+    });
+    // Initialize Bootstrap tooltips for sortable headers
+    document.addEventListener('DOMContentLoaded', function() {
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.forEach(function (el) { new bootstrap.Tooltip(el, { container: 'body' }); });
     });
     </script>
 </body>
