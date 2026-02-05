@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'import_export',  # для импорта-экспорта
     'dbbackup',      # для резервного копирования
     'tracker',       # наше приложение
+    'django_extensions', # для создания схем данных
 ]
 
 MIDDLEWARE = [

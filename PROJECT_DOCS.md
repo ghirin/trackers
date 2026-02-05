@@ -155,5 +155,29 @@ python tracker_system/manage.py restore_system <backupfile>
 
 ---
 
-Автор: команда проекта
+Автор: Yury Ghirin
 Дата: 2026-02-04
+
+Визуальные схемы данных:
+
+Для создания схем данных нам необходимо:
+
+1. Установить в систему grafviz и другие библиотеки:
+
+sudo apt install graphviz libgraphviz-dev graphviz-dev pkg-config
+2. В окружении проекта установить приложения django-extensions и pygrafviz
+pip install pygraphviz
+pip install django-extensions
+3. В настройках проекта settings.py добавить приложение django-extensions 
+INSTALLED_APPS = (
+    ...
+    'django_extensions',
+)
+
+4. Если в проекте используются сторонние шаблонизаторы, то для создания схемы их необходимо временно отключить так как django-extensions использует родные шаблоны Django.
+
+5. Ну и наконец для создания схемы моделей используем команды:
+# Для всего проекта
+./manage.py graph_models -a -g -o my_project_visualized.png
+# Для отдельных приложений проекта
+./manage.py graph_models django_app -g -o ../django_app_models.png
